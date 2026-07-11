@@ -1,0 +1,32 @@
+# Staging area used while assembling this repo — never commit its contents
+/_incoming/
+
+# The paper draft (temporary, will be removed from repo)
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# Data / outputs (paths TBD once we see the analyses)
+*.h5ad
+*.h5
+*.rds
+*.csv.gz
+outputs/
+results/
+logs/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
