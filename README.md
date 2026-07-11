@@ -1,6 +1,17 @@
-# CASCADE
+<p align="center">
+  <img src="assets/logo.png" alt="CASCADE logo" width="260">
+</p>
 
-**Context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes**
+<h1 align="center">CASCADE</h1>
+
+<p align="center"><b>An AI model for context-aware single-cell modelling linking cellular programmes to patient-level disease phenotypes</b></p>
+
+<p align="center">
+  <a href="https://github.com/mims-harvard/CASCADE"><img src="https://img.shields.io/badge/Code-mims--harvard%2FCASCADE-181717?logo=github&logoColor=white" alt="Code"></a>
+  <img src="https://img.shields.io/badge/Paper-coming%20soon-lightgrey" alt="Paper (coming soon)">
+  <img src="https://img.shields.io/badge/HuggingFace-coming%20soon-lightgrey?logo=huggingface&logoColor=white" alt="HuggingFace (coming soon)">
+  <img src="https://img.shields.io/badge/Project%20Page-coming%20soon-lightgrey" alt="Project Page (coming soon)">
+</p>
 
 CASCADE is a context-aware, multiscale single-cell foundation model. During pre-training it
 conditions each cell's representation on the biological context in which it was observed —
@@ -12,10 +23,18 @@ provides two complementary explanations: an attention-based **cell explainer** (
 patient-level prediction) and a perturbation-based **gene explainer** (which genes drive a
 prediction, via in-silico knockdown and KL-divergence scoring).
 
+<p align="center">
+  <img src="assets/figure1_overview.png" alt="CASCADE model overview: context-aware tokenization, cell encoder, context-specific projectors, patient representation module, and the explainability module" width="900">
+</p>
+
 CASCADE was evaluated across four large-scale disease cohorts (HLCA, LuCA, SEATTLE-Alzheimer,
 Autism; 51 supervised tasks against 8 baselines), and in three case studies: Alzheimer's disease
 cell-type and gene-programme recovery, a Huntington's disease patient-stratification study, and
 recovery of thyroid hormone / THRα receptor-signalling gene programmes.
+
+<p align="center">
+  <img src="assets/figure2_datasets_stratification.png" alt="Disease-specific context-aware single-cell modelling across six cohorts, and patient-specific molecular-to-clinical phenotype modelling with patient stratification" width="900">
+</p>
 
 ## Repository structure
 
