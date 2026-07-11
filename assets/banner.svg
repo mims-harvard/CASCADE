@@ -1,4 +1,4 @@
-<svg width="1200" height="380" viewBox="0 0 1200 380" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="480" viewBox="0 0 1200 480" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <radialGradient id="blobTeal" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.55"/>
@@ -17,28 +17,28 @@
       <stop offset="60%" stop-color="#5eead4"/>
       <stop offset="95%" stop-color="#c4b5fd"/>
     </linearGradient>
-    <filter id="blur1"><feGaussianBlur stdDeviation="55"/></filter>
-    <filter id="blur2"><feGaussianBlur stdDeviation="48"/></filter>
-    <filter id="blur3"><feGaussianBlur stdDeviation="40"/></filter>
+    <filter id="blur1"><feGaussianBlur stdDeviation="60"/></filter>
+    <filter id="blur2"><feGaussianBlur stdDeviation="52"/></filter>
+    <filter id="blur3"><feGaussianBlur stdDeviation="44"/></filter>
   </defs>
 
-  <rect width="1200" height="380" fill="#020617"/>
+  <rect width="1200" height="480" fill="#020617"/>
 
-  <circle cx="240" cy="30" r="230" fill="url(#blobTeal)" filter="url(#blur1)"/>
-  <circle cx="960" cy="110" r="200" fill="url(#blobViolet)" filter="url(#blur2)"/>
-  <circle cx="120" cy="340" r="160" fill="url(#blobAmber)" filter="url(#blur3)"/>
+  <circle cx="240" cy="70" r="250" fill="url(#blobTeal)" filter="url(#blur1)"/>
+  <circle cx="970" cy="150" r="220" fill="url(#blobViolet)" filter="url(#blur2)"/>
+  <circle cx="140" cy="420" r="180" fill="url(#blobAmber)" filter="url(#blur3)"/>
 
-  <text x="600" y="185" text-anchor="middle"
+  <text x="600" y="255" text-anchor="middle"
         font-family="Helvetica, Arial, sans-serif" font-weight="800"
         font-size="96" fill="url(#titleGrad)"
         textLength="620" lengthAdjust="spacingAndGlyphs">CASCADE</text>
 
-  <text x="600" y="235" text-anchor="middle"
+  <text x="600" y="308" text-anchor="middle"
         font-family="Helvetica, Arial, sans-serif" font-weight="500"
         font-size="20" fill="rgba(255,255,255,0.65)"
         textLength="760" lengthAdjust="spacingAndGlyphs">Cross-System, Multi-Scale Single-Cell Foundation Model with Clinical Applications</text>
 
-  <text x="600" y="272" text-anchor="middle"
+  <text x="600" y="345" text-anchor="middle"
         font-family="Helvetica, Arial, sans-serif" font-weight="400"
         font-size="15" fill="rgba(255,255,255,0.4)"
         textLength="820" lengthAdjust="spacingAndGlyphs">Context-aware single-cell modelling linking cellular programmes to patient-level disease phenotypes</text>
