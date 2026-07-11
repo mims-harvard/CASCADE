@@ -1,16 +1,14 @@
 <p align="center">
-  <img src="assets/logo.png" alt="CASCADE logo" width="260">
+  <a href="https://valegiunchiglia.github.io/cascade-website/">
+    <img src="assets/banner.svg" alt="CASCADE — Cross-System, Multi-Scale Single-Cell Foundation Model with Clinical Applications" width="100%">
+  </a>
 </p>
 
-<h1 align="center">CASCADE</h1>
-
-<p align="center"><b>An AI model for context-aware single-cell modelling linking cellular programmes to patient-level disease phenotypes</b></p>
-
 <p align="center">
+  <a href="https://valegiunchiglia.github.io/cascade-website/"><img src="https://img.shields.io/badge/Project%20Page-valegiunchiglia.github.io%2Fcascade--website-14b8a6" alt="Project Page"></a>
   <a href="https://github.com/mims-harvard/CASCADE"><img src="https://img.shields.io/badge/Code-mims--harvard%2FCASCADE-181717?logo=github&logoColor=white" alt="Code"></a>
   <img src="https://img.shields.io/badge/Paper-coming%20soon-lightgrey" alt="Paper (coming soon)">
   <img src="https://img.shields.io/badge/HuggingFace-coming%20soon-lightgrey?logo=huggingface&logoColor=white" alt="HuggingFace (coming soon)">
-  <img src="https://img.shields.io/badge/Project%20Page-coming%20soon-lightgrey" alt="Project Page (coming soon)">
 </p>
 
 CASCADE is a context-aware, multiscale single-cell foundation model. During pre-training it
