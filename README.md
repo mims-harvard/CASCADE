@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://valegiunchiglia.github.io/cascade-website/">
-    <img src="assets/banner.svg" alt="CASCADE — Cross-System, Multi-Scale Single-Cell Foundation Model with Clinical Applications" width="100%">
+    <img src="assets/banner.png" alt="CASCADE — Cross-System, Multi-Scale Single-Cell Foundation Model with Clinical Applications" width="100%">
   </a>
 </p>
 
