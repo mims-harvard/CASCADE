@@ -47,9 +47,11 @@ CASCADE/
 │   │                           #   collator, donor splits
 │   └── training/                # DDP training loop, Sinkhorn domain adaptation
 ├── preprocessing/            # raw -> model-ready preprocessing: QC/normalisation, gene
-│                              #   annotation, clustering, batch-effect correction, and the
-│                              #   per-context median expression reference used by the tokenizer
-│                              #   (Methods 9.2-9.3; see analysis/README.md for per-dataset status)
+│                              #   annotation, clustering, batch-effect correction, clinical/
+│                              #   donor-level metadata cleaning, donor-level stratified splitting,
+│                              #   the per-context median expression reference, and the scripts
+│                              #   that build the tokenizer's dictionaries (Methods 9.2-9.4;
+│                              #   see analysis/README.md for per-dataset status)
 ├── analysis/
 │   ├── benchmarking/           # 4-dataset, 51-task benchmark vs. baselines; sensitivity analyses
 │   ├── alzheimers/              # CASCADE-Explainer cell-type / gene-programme recovery (SEATTLE)
@@ -79,11 +81,15 @@ which paper analyses they correspond to, and which are still missing.** In short
   attention baseline, and the CASCADE-vs-baseline AUROC comparison are all in place.
 - **Huntington's disease case study (Fig. 5)** — complete: prediction (5a-b), cell-type-importance
   vs. severity (5c-e), and clustering/stratification (5f-g) are all in place.
-- **Thyroid hormone case study (Fig. 4)** — complete, most mature analysis folder in the repo.
+- **Thyroid hormone case study (Fig. 4)** — complete, most mature analysis folder in the repo,
+  including its M2 differential-expression baseline precursor script.
 - **Preprocessing (Methods 9.2-9.4)** — QC/normalisation, gene annotation, clustering,
-  batch-effect correction, per-context median reference, and the context-aware tokenizer are
-  all in place, covering every dataset except HH (whose analysis scripts consume pre-extracted
-  attention caches rather than raw counts, so this doesn't block anything downstream).
+  batch-effect correction, per-context median reference, clinical/donor-level metadata cleaning,
+  donor-level stratified splitting, and the context-aware tokenizer (plus the scripts that build
+  its dictionaries) are all in place, covering every dataset actually used in the paper except
+  HH's raw QC/annotation/tokenization (HH's clinical metadata cleaning is covered; the HD analysis
+  scripts consume pre-extracted attention caches rather than raw counts, so this doesn't block
+  anything downstream).
 
 ## Installation
 

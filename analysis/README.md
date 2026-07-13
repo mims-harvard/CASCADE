@@ -100,18 +100,23 @@ everywhere, and verified: `create_donor_df` now returns all 52 valid donors inst
 
 | Piece | Status | Script |
 |---|---|---|
-| Full pipeline: ground truth construction, standardization, gene universes, filtering variants, 10 aggregation methods, benchmarking, cascade-vs-DE comparison (hit-set + ranking + combined-set), cell-type-specific (astrocyte/glut. neuron) analysis, Excel export | ✅ | `thyroid_hormone/` (20 scripts — see `thyroid_hormone/scripts/00_config.R` for the pipeline order) |
+| M2 differential-expression baseline for the treatment/DN-THRα prediction tasks ("findings ... compared with a matched DE baseline for both the treatment and DN-THRα prediction tasks") | ✅ | `thyroid_hormone/scripts/03_m2_differential_expression.py` — Python, feeds directly into `04_standardize_de_baselines.R` (verified its output columns match that script's `required_cols` exactly) |
+| Full pipeline: ground truth construction, standardization, gene universes, filtering variants, 10 aggregation methods, benchmarking, cascade-vs-DE comparison (hit-set + ranking + combined-set), cell-type-specific (astrocyte/glut. neuron) analysis, Excel export | ✅ | `thyroid_hormone/` (20 R scripts — see `thyroid_hormone/scripts/00_config.R` for the pipeline order) |
 
-This is the most complete analysis folder in the repo. One thing to be aware of: none
-of these scripts have actually been *run* against real data in this environment (R/data
-files weren't available), so they're verified by parsing and functional smoke tests on
-synthetic data only, not by reproducing your actual published numbers end to end.
+This is the most complete analysis folder in the repo — the numbered R pipeline plus its
+Python DE-baseline precursor (`03_m2_differential_expression.py`, added once the DE
+baseline's exact provenance was confirmed against the paper text). One thing to be aware
+of: none of the R scripts have actually been *run* against real data in this environment
+(R/data files weren't available), so they're verified by parsing and functional smoke
+tests on synthetic data only, not by reproducing your actual published numbers end to
+end. `03_m2_differential_expression.py`, by contrast, *was* run end-to-end on synthetic
+M2-shaped data (Python + scanpy were available).
 
 ## Preprocessing coverage (outside `analysis/`, Methods 9.1-9.4)
 
 | Piece | Status | Script |
 |---|---|---|
-| Clinical/donor-level metadata pre-processing (Methods 9.3) | ✅ | `preprocessing/seattle_ad_metadata.py` (Seattle-AD only; other datasets' clinical metadata scripts weren't part of this upload) |
+| Clinical/donor-level metadata pre-processing (Methods 9.3), all 6 paper datasets | ✅ | `preprocessing/clinical_metadata_{autism,hlca,m2,luca,hh,seattle}.py`, shared helpers in `preprocessing/clinical_metadata_utils.py` |
 | Scanpy QC/normalisation pipeline: filtering, normalise, log1p, HVG, scale (Methods 9.2) — HLCA/LUCA/M2 | ✅ | `preprocessing/qc_scanpy.py`, shared helpers in `preprocessing/qc_pipeline.py` |
 | Same, AUTISM (raw 10x-style mtx input instead of a cellxgene h5ad) | ✅ | `preprocessing/qc_scanpy_autism.py` |
 | Same, Seattle-AD (out-of-core scarf/Dask pipeline, used because of dataset size) | ✅ | `preprocessing/qc_scarf_seattle.py` |
@@ -121,8 +126,21 @@ synthetic data only, not by reproducing your actual published numbers end to end
 | GENCODE protein-coding/miRNA gene-type annotation | ✅ | `preprocessing/protein_coding_annotation.py` |
 | LUCA batch-effect correction via per-gene OLS regression (Methods 9.2) | ✅ | `preprocessing/batch_effect_regression.py` |
 | Per-context (cell type/tissue/disease) non-zero median expression reference (Methods 9.4) | ✅ | `preprocessing/context_median_reference.py` |
+| Donor-level stratified train/test split, ensuring every clinical category has >=1 training donor (Methods 9.11) | ✅ | `preprocessing/donor_stratified_split.py` — generator for the fixed splits already checked into `cascade/data/splits.py`; re-running isn't required to reproduce the paper |
+| Builds the tokenizer/metadata dictionaries and runs tokenisation per dataset+context (Methods 9.4) | ✅ | `preprocessing/build_tokenizer_metadata.py`, plus `preprocessing/rename_tokenized_chunks.py` and `scripts/flatten_arrow_dataset_dirs.sh` (batch-output file-layout utilities) |
 | Context-aware tokenizer: fold-change ranking, up-/down-regulated token sequences (Methods 9.4) | ✅ | `cascade/data/tokenizer.py` (core package, not `analysis/`) |
-| HH (Huntington's) raw preprocessing | ❌ | **needs upload** — HH analysis scripts (2.5-2.7) consume pre-extracted attention/embedding caches, not raw counts, so this gap doesn't block the HD case study |
+| HH (Huntington's) raw QC/annotation/tokenization (clinical metadata is covered, above) | ❌ | **needs upload** — HH analysis scripts (2.5-2.7) consume pre-extracted attention/embedding caches, not raw counts, so this gap doesn't block the HD case study |
+
+A batch of scripts for datasets never mentioned anywhere in the paper text (AUTISM-BULK,
+AUTISM-ORGANOIDS, GEO, CHOOSE — a bulk RNA-seq cohort, an organoid CRISPR-perturbation
+model, and two exploratory/external datasets) was also uploaded but deliberately **not**
+ported: grepping the full paper text confirms none of these four dataset names appear
+anywhere, so they're internal-codebase side projects outside this submission's scope. The
+ATC drug-mapping module built specifically for AUTISM-BULK's free-text medication notes
+(`P1h`/`P1i`) was dropped for the same reason. An ontology-term-to-integer mapping script
+(`P6`) was also left unported: it has a missing dependency (a MONDO-to-ICD9 mapping CSV)
+and its exact Methods-text grounding was unclear, so rather than guess at its content it's
+just noted here as available in the original upload if it's needed later.
 
 Bugs fixed while porting, verified against synthetic data reproducing the original
 scripts' exact logic (no real raw counts were available to test against, but each bug
@@ -150,10 +168,25 @@ was confirmed to be deterministic given the described operations, not data-depen
   the `output_directory`/`output_prefix`/batch arguments entirely. Fixed to use the
   parameterized path; verified end-to-end with a batched synthetic tokenization run
   (5 batches, all cells accounted for, no hardcoded paths in the output).
+- `clinical_metadata_autism.py` and `clinical_metadata_hh.py`: both build/pass through
+  clinical column names containing `/` (`'Attention-deficit/hyperactivity disorder'`
+  as a comorbidity condition; `'Onset/Motor'`/`'Onset/Cog'` as literal HH clinical
+  fields). h5ad is HDF5-based, which forbids `/` in dataset/group keys, so
+  `adata.write()` would crash as soon as any of these reached `.obs`. Confirmed by
+  writing a synthetic AnnData with the exact same column names, which reproduces the
+  crash deterministically before the fix and succeeds after (sanitized to `-`/`_`).
+- `clinical_metadata_utils.py`'s `export_value_counts_excel`: Excel sheet names are
+  case-insensitive for uniqueness, and AUTISM's own column list has both `'sex'` and
+  `'Sex'` — writing both as sheets crashed with `DuplicateWorksheetName`. Reproduced
+  with the real AUTISM column list; fixed by deduplicating sheet names case-insensitively.
 
-All 8 scripts above were smoke-tested end-to-end on synthetic data shaped like a real
+All scripts above were smoke-tested end-to-end on synthetic data shaped like a real
 run (raw counts -> QC -> annotation -> clustering -> protein-coding filter ->
-batch-effect regression -> median reference -> tokenization), not just compiled.
+batch-effect regression -> median reference -> clinical metadata -> donor split ->
+tokenizer-metadata build -> tokenization), not just compiled. The M2 differential
+expression baseline (`analysis/thyroid_hormone/scripts/03_m2_differential_expression.py`,
+see below) was also run end-to-end and its output columns checked against what
+`04_standardize_de_baselines.R` requires.
 
 ## Summary of what's needed next
 
