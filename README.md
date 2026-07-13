@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://valegiunchiglia.github.io/cascade-website/">
+  <a href="https://zitniklab.hms.harvard.edu/CASCADE-website/">
     <img src="assets/banner.png" alt="CASCADE — Cross-System, Multi-Scale Single-Cell Foundation Model with Clinical Applications" width="100%">
   </a>
 </p>
@@ -7,7 +7,7 @@
 <h2 align="center">CASCADE: context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes</h2>
 
 <p align="center">
-  <a href="https://valegiunchiglia.github.io/cascade-website/"><img src="https://img.shields.io/badge/Project%20Page-valegiunchiglia.github.io%2Fcascade--website-14b8a6" alt="Project Page"></a>
+  <a href="https://zitniklab.hms.harvard.edu/CASCADE-website/"><img src="https://img.shields.io/badge/Project%20Page-zitniklab.hms.harvard.edu%2FCASCADE--website-14b8a6" alt="Project Page"></a>
   <a href="https://github.com/mims-harvard/CASCADE"><img src="https://img.shields.io/badge/Code-mims--harvard%2FCASCADE-181717?logo=github&logoColor=white" alt="Code"></a>
   <img src="https://img.shields.io/badge/Paper-bioRxiv%20coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="Paper (bioRxiv, coming soon)">
   <a href="https://huggingface.co/mims-harvard"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-mims--harvard-FFD21E" alt="HuggingFace"></a>
