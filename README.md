@@ -101,41 +101,73 @@ dataset it was pretrained on.
 
 ## Pretraining
 
-CASCADE is pretrained per-cohort with the context-specific contrastive objective (Methods
-9.10-9.11) via [`cascade/training/train_ddp.py`](cascade/training/train_ddp.py), which wraps
-the shared training loop in [`cascade/training/trainer.py`](cascade/training/trainer.py). It's
-a DDP entrypoint, so it's always launched with `torchrun` — with `--nproc_per_node=1` on a
-single GPU, or scaled up across nodes as in the SLURM example below. `--list_data` points at
-one or more tokenized dataset directories (output of the
-[preprocessing pipeline](analysis/README.md#preprocessing-methods-92-94)); `--dataset` must be
-a key in `cascade.data.splits.SPLITS_BY_DATASET`.
+Three steps, in order — each dataset needs to go through all three before a model can be
+trained on it.
 
-```bash
-CASCADE_DATA_ROOT=/path/to/DATASET CASCADE_CKPT_ROOT=/path/to/checkpoints \
-torchrun --nproc_per_node=1 -m cascade.training.train_ddp \
-    --list_data "$CASCADE_DATA_ROOT/HLCA/DISEASE/DISEASE-ID.dataset" \
-    --dataset HLCA --batch 32 --nlayers 12 --cell_emb_style avg-pool \
-    --context_specific_projections --donors --DA --nepochs 50
-```
+1. **Process the raw data** (Methods 9.2-9.3): QC/normalisation, gene annotation, clustering,
+   clinical/donor-level metadata. Run the full per-dataset pipeline documented in
+   [`analysis/README.md` → Preprocessing](analysis/README.md#preprocessing-methods-92-94)
+   (steps 1-6 there).
+2. **Tokenise** (Methods 9.4): build the per-context median expression reference, then the
+   tokenizer/metadata dictionaries and the tokenized dataset itself — steps 8-9 of the same
+   preprocessing table (`context_median_reference.py`, `build_tokenizer_metadata.py`).
+3. **Pretrain**: with the context-specific contrastive objective (Methods 9.10-9.11), via
+   [`cascade/training/train_ddp.py`](cascade/training/train_ddp.py), which wraps the shared
+   training loop in [`cascade/training/trainer.py`](cascade/training/trainer.py). It's a DDP
+   entrypoint, so it's always launched with `torchrun` — `--nproc_per_node=1` on a single GPU,
+   or scaled up across nodes as in the SLURM example below. `--list_data` points at the
+   tokenized dataset directory produced in step 2; `--dataset` must be a key in
+   `cascade.data.splits.SPLITS_BY_DATASET`.
 
-For multi-node training, see [`scripts/hlca_multinode.sh`](scripts/hlca_multinode.sh) for a
-full SLURM launcher (checkpoint frequency, W&B logging, NCCL/rendezvous setup included).
+   ```bash
+   CASCADE_DATA_ROOT=/path/to/DATASET CASCADE_CKPT_ROOT=/path/to/checkpoints \
+   torchrun --nproc_per_node=1 -m cascade.training.train_ddp \
+       --list_data "$CASCADE_DATA_ROOT/HLCA/DISEASE/DISEASE-ID.dataset" \
+       --dataset HLCA --batch 32 --nlayers 12 --cell_emb_style avg-pool \
+       --context_specific_projections --donors --DA --nepochs 50
+   ```
+
+   For multi-node training, see [`scripts/hlca_multinode.sh`](scripts/hlca_multinode.sh) for a
+   full SLURM launcher (checkpoint frequency, W&B logging, NCCL/rendezvous setup included).
 
 ## Inference
 
-Downstream analyses consume *frozen* CASCADE embeddings rather than running the model live.
-Extract them from a trained (or [downloaded](#pretrained-models)) checkpoint with
-[`cascade/explainer/get_embeddings_parallel.py`](cascade/explainer/get_embeddings_parallel.py),
-also a `torchrun` entrypoint:
+Three steps, in order:
 
-```bash
-torchrun --nproc_per_node=1 -m cascade.explainer.get_embeddings_parallel \
-    --dataset HLCA --checkpoint /path/to/ckpt.pt --output-path /path/to/embeddings.pkl
-```
-
-This writes chunked embedding pickles (`*_rank_*_chunk_*.pkl`) that the donor-/cell-level
-prediction heads and CASCADE-Explainer scripts under `analysis/` read directly. See
-[`scripts/get_emb_parallel.sh`](scripts/get_emb_parallel.sh) for the multi-node SLURM version.
+1. **Download a pretrained checkpoint** from HuggingFace (see [Pretrained models](#pretrained-models)
+   for the full list):
+   ```bash
+   huggingface-cli download mims-harvard/CASCADE-HLCA --local-dir ./CASCADE-HLCA
+   ```
+   This gives you `model.safetensors` + `config.json` (weights and architecture) plus the
+   `tokenizer_dictionary_*.pkl`/`metadata_dictionary_*.pkl`/`median_genes_*.pkl` companion
+   files needed to tokenize new data for that model — each HF model page's "Usage
+   Instructions" section shows how to load them directly into `TransformerGenerator`
+   (`cascade/model/cascade_model.py`).
+2. **Extract embeddings**: downstream analyses consume *frozen* CASCADE embeddings rather than
+   running the model live. The paper's own large-scale extraction used
+   [`cascade/explainer/get_embeddings_parallel.py`](cascade/explainer/get_embeddings_parallel.py),
+   a `torchrun` entrypoint that reads a *raw* training checkpoint (`.pt`, with
+   `model_state_dict`/`args`) — i.e. one produced by your own `train_ddp.py` run above, not the
+   slim safetensors artifact downloaded from HuggingFace:
+   ```bash
+   torchrun --nproc_per_node=1 -m cascade.explainer.get_embeddings_parallel \
+       --dataset HLCA --checkpoint /path/to/raw_ckpt.pt --output-path /path/to/embeddings.pkl
+   ```
+   This writes chunked embedding pickles (`*_rank_*_chunk_*.pkl`). See
+   [`scripts/get_emb_parallel.sh`](scripts/get_emb_parallel.sh) for the multi-node SLURM
+   version. (For a quick single-process check against a HuggingFace-downloaded checkpoint
+   instead, load it as shown on that model's page and run your tokenized cells through it
+   directly — see `cascade/explainer/embeddings.py` for how the pooled cell embedding is
+   derived from the model's output.)
+3. **Run a downstream prediction** — e.g. the donor-/cell-level cell-type and clinical
+   multi-task sweep (Fig. 2):
+   ```bash
+   python -m analysis.benchmarking.multi_task_prediction --dataset HLCA
+   ```
+   `multi_task_prediction.py` looks up each dataset's embeddings under a fixed
+   `CASCADE_CKPT_ROOT`-relative path (`DATASET_CONFIGS` near the top of the script) — point
+   step 2's `--output-path` there, or edit `DATASET_CONFIGS` to match wherever you saved it.
 
 For the exact analyses and figures reported in the paper, see
 [`analysis/README.md`](analysis/README.md).
