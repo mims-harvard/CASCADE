@@ -1,201 +1,201 @@
-# Analysis coverage map
+# Reproducing the paper's analyses
 
-This maps every script under `analysis/` to the paper section/figure it reproduces,
-and lists which paper analyses **don't yet have code in this repo** and need to be
-uploaded before the repository is complete. Status is as of this writing and should
-be updated as more scripts are added.
+This directory contains the code to reproduce the analyses and figures in the CASCADE
+paper. Sections below are organized by figure, in the order you'd run them — each
+entry names the script(s), the order to run them in, and what each step produces.
 
-Legend: ✅ present · 🟡 partial (some but not all pieces present) · ❌ missing (nothing uploaded yet)
+Before running anything here, follow the [main README](../README.md) for installation
+and set `CASCADE_DATA_ROOT`/`CASCADE_CKPT_ROOT` to point at your copy of the datasets
+and trained checkpoints (see [Data](../README.md#data)). Pretrained checkpoints
+themselves are produced by `cascade/training/` (see `scripts/*.sh` for SLURM launch
+examples) — the analyses below all start from a *frozen* checkpoint or its extracted
+embeddings, not from raw data.
 
-## 2.2 — CASCADE outperforms baselines across 51 multiscale disease prediction tasks
-*(Figure 2; Methods 9.11; Supplementary Tables S6, S9-S12)*
+## Preprocessing (Methods 9.2-9.4)
 
-| Piece | Status | Script |
-|---|---|---|
-| CASCADE donor/cell-level prediction sweep, all 4 datasets (SEATTLE, AUTISM, HLCA, LUCA) | ✅ | `benchmarking/multi_task_prediction.py` |
-| Baseline-model evaluation pattern (extract embeddings from an external model, run the same linear/attention probe protocol as CASCADE) | ✅ | `benchmarking/baselines/geneformer_luca.py`, `geneformer_luca_patient.py` — kept as the canonical worked example. All 8 baselines (Geneformer, scGPT, scVI, UCE, PaScient, mcBERT, LR+CA, majority-class) follow this same harness with the embedding-extraction step swapped out, so a separate script per baseline isn't needed in the repo. |
-| Sequence-length sensitivity (Supp Note 4) | ✅ | `benchmarking/sensitivity/sequence_length_ablation.py` |
-| Median/data-leakage sensitivity (Supp Notes 2-3) | ✅ | `benchmarking/sensitivity/median_stability.py` |
-| LUCA UMAP visualization | ✅ | `benchmarking/luca/umap_visualization.py` |
-| LUCA context ablation | ✅ | `benchmarking/luca/context_ablation.py` |
+Needed once per dataset, before training or any downstream analysis. Run in this
+order (all entrypoints are `python -m preprocessing.<script>`, see each script's
+docstring for full argument lists):
 
-## 2.3 — CASCADE-Explainer prioritises Alzheimer's disease-relevant cell types
-*(Figure 3; "orthogonal benchmarking" — LLM-arena literature evidence + eQTL/GWAS colocalization)*
+1. **QC and normalisation** (Methods 9.2) — filter low-quality cells/genes,
+   normalise, log-transform, select highly-variable genes, scale.
+   - HLCA / LUCA / M2 (mouse-thyroid): [`qc_scanpy.py`](../preprocessing/qc_scanpy.py)
+     `--dataset-name LUCA --input-path .../adata_raw.h5ad --output-dir .../LUCA`
+   - AUTISM (raw 10x-style mtx input): [`qc_scanpy_autism.py`](../preprocessing/qc_scanpy_autism.py)
+   - Seattle-AD (out-of-core scarf/Dask, used because of dataset size): [`qc_scarf_seattle.py`](../preprocessing/qc_scarf_seattle.py)
+2. **Gene annotation** — BioMart/GTF lookup, dedup by Ensembl ID/NCBI ID/symbol:
+   [`gene_annotation.py`](../preprocessing/gene_annotation.py)
+3. **Clustering** — PCA/neighbours/Leiden/UMAP + marker-gene ranking:
+   [`clustering_umap.py`](../preprocessing/clustering_umap.py), then majority-vote
+   cluster-to-cell-type labelling: [`celltype_annotation.py`](../preprocessing/celltype_annotation.py)
+4. **Protein-coding filter** — GENCODE gene-type annotation:
+   [`protein_coding_annotation.py`](../preprocessing/protein_coding_annotation.py)
+5. **Batch-effect correction** (LUCA only) — per-gene OLS regression on
+   platform/dataset covariates: [`batch_effect_regression.py`](../preprocessing/batch_effect_regression.py)
+6. **Clinical/donor-level metadata** (Methods 9.3) — one script per dataset:
+   [`clinical_metadata_autism.py`](../preprocessing/clinical_metadata_autism.py),
+   [`clinical_metadata_hlca.py`](../preprocessing/clinical_metadata_hlca.py),
+   [`clinical_metadata_m2.py`](../preprocessing/clinical_metadata_m2.py),
+   [`clinical_metadata_luca.py`](../preprocessing/clinical_metadata_luca.py),
+   [`clinical_metadata_hh.py`](../preprocessing/clinical_metadata_hh.py),
+   [`clinical_metadata_seattle.py`](../preprocessing/clinical_metadata_seattle.py)
+7. **Donor-level stratified split** (Methods 9.11) — generates the train/test donor
+   lists already checked into `cascade/data/splits.py`; only needed if you want to
+   regenerate them: [`donor_stratified_split.py`](../preprocessing/donor_stratified_split.py)
+8. **Per-context median expression reference** (Methods 9.4) — non-zero median
+   expression per cell type/tissue/disease, used to compute each cell's context-specific
+   fold-change ranking: [`context_median_reference.py`](../preprocessing/context_median_reference.py)
+9. **Tokenisation** (Methods 9.4) — builds the tokenizer/metadata dictionaries and
+   runs `cascade.data.tokenizer.TranscriptomeTokenizer`:
+   [`build_tokenizer_metadata.py`](../preprocessing/build_tokenizer_metadata.py)
+   `--dataset-name LUCA --context CELLS --clinical-dir ... --data-dir ... --output-dir ... --output-prefix tokenized_data_CELLS`,
+   then flatten the batched output with
+   [`rename_tokenized_chunks.py`](../preprocessing/rename_tokenized_chunks.py) and
+   [`../scripts/flatten_arrow_dataset_dirs.sh`](../scripts/flatten_arrow_dataset_dirs.sh).
 
-| Piece | Status | Script |
-|---|---|---|
-| LLM-arena pairwise cell-type comparison + Elo scoring (Fig. 3b-c data generation) | ✅ | `alzheimers/elo_score.py` (requires `OPENROUTER_API_KEY`; external LLM-judge API dependency is inherent to the method) |
-| Correlation between LLM-arena Elo and CASCADE-derived importance, granular + coarse (Fig. 3b-c) | ✅ | `alzheimers/elo_loci_style_plots.py` |
-| eQTL/GWAS colocalization cell-type ranking + correlation with CASCADE (Fig. 3d-e) | ❌ | **needs upload** |
-| External reference-gene-set enrichment panel (Fig. 3f) | ❌ | **needs upload** |
+HH (Huntington's) raw QC/annotation/tokenization is not yet included (only its
+clinical-metadata step is) — the Huntington's analyses below consume pre-extracted
+attention/embedding caches rather than raw counts, so this doesn't block anything.
 
-`elo_loci_style_plots.py`'s CASCADE cell-type importance values (`CL_XAI`, `CASC_ABS_MAJOR`)
-are hardcoded from an already-computed result rather than loaded from a file — the script
-that originally produced those specific numbers wasn't part of this upload, so they're
-carried over as-is rather than re-derived.
+## Figure 2 (CASCADE outperforms baselines across 51 multiscale disease prediction tasks)
+*(Methods 9.11; Supplementary Tables S6, S9-S12)*
 
-## 2.4 — CASCADE-Explainer recovers canonical cell-type gene programmes
-*(healthy-only SEATTLE cell-type explainer validation, two baselines: attention-derived and cell-type-specific DE)*
+**Main prediction sweep**: donor- and cell-level prediction across all 4 benchmark
+datasets (SEATTLE, AUTISM, HLCA, LUCA), against a `PatientAggregator`-based attention
+model (donor-level) or linear probe (cell-level):
+[`benchmarking/multi_task_prediction.py`](benchmarking/multi_task_prediction.py)
+```
+python -m analysis.benchmarking.multi_task_prediction --dataset SEATTLE
+python -m analysis.benchmarking.multi_task_prediction --dataset all --output-dir results/
+```
 
-| Piece | Status | Script |
-|---|---|---|
-| Healthy-only, grouped cell-type marker (DE) ground truth | ✅ | `alzheimers/healthy_celltype_markers.py` |
-| Attention-derived gene-importance baseline | ✅ | `alzheimers/attention_baseline.py` |
-| Ground-truth-vs-ranking comparison (proportion-based, with permutation null) and AUROC-based comparison, both with 2-4 GT sources | ✅ | `alzheimers/gt_analysis.py` |
-| Headline grouped-bar figure: CASCADE vs. attention-baseline vs. DEG, AUROC vs. 2 GT sources | ✅ | `alzheimers/create_combined_gt_viz.py` |
+**Baselines**: extract embeddings from an external model and run the same probe
+protocol as CASCADE. [`benchmarking/baselines/geneformer_luca.py`](benchmarking/baselines/geneformer_luca.py)
+and [`geneformer_luca_patient.py`](benchmarking/baselines/geneformer_luca_patient.py)
+are the worked example — all 8 baselines (Geneformer, scGPT, scVI, UCE, PaScient,
+mcBERT, LR+CA, majority-class) follow this same harness with the embedding-extraction
+step swapped out:
+```
+python -m analysis.benchmarking.baselines.geneformer_luca --seed 1 \
+    --geneformer-h5ad $CASCADE_DATA_ROOT/LUCA/BASELINE/geneformer/adata_geneformer.h5ad
+```
 
-Section 2.4 is now fully covered. (A script named `FINAL-deg-comparison.py` was uploaded
-earlier but turned out to be a *different* analysis — a positional-bias sanity check for the
-gene explainer, not referenced anywhere in the paper — so it was dropped rather than ported;
-it was not a substitute for this section.)
+**Sensitivity analyses** (supplementary, run independently of the main sweep):
+- Sequence-length ablation (Supp Note 4): [`benchmarking/sensitivity/sequence_length_ablation.py`](benchmarking/sensitivity/sequence_length_ablation.py) `--dataset LUCA`
+- Median/data-leakage stability (Supp Notes 2-3): [`benchmarking/sensitivity/median_stability.py`](benchmarking/sensitivity/median_stability.py) `--h5ad /path/to/data.h5ad --output-dir ./results`
 
-## 2.5 — CASCADE predicts multiscale genetic and neuropathological Huntington's disease phenotypes
-*(Figure 5a-b; donor- and cell-level prediction of CAG repeat lengths, VS grade, motor/cognitive onset)*
+**LUCA-specific supplementary panels**:
+[`benchmarking/luca/umap_visualization.py`](benchmarking/luca/umap_visualization.py) and
+[`benchmarking/luca/context_ablation.py`](benchmarking/luca/context_ablation.py).
 
-| Piece | Status | Script |
-|---|---|---|
-| Donor-level attention-probe prediction | ✅ | `huntingtons/donor_level_prediction.py` |
-| Cell-level linear-probe prediction | ✅ | `huntingtons/cell_level_prediction.py` |
-| Raw pseudobulk / cell-level linear-regression baseline | ✅ | `huntingtons/baseline_linear_regression.py` |
+## Figure 3 (CASCADE-Explainer prioritises and validates Alzheimer's disease-relevant cell types)
 
-## 2.6 — CASCADE-Explainer links cell-type programmes to Huntington's disease severity and CAG repeat length
-*(Figure 5c-e; aggregated cell-type importance across VS-grade stages, correlation with clinical features)*
+**Panels b-c — LLM-arena orthogonal benchmarking**: pairwise cell-type comparisons
+judged by an LLM, scored with Elo, correlated against CASCADE-derived importance.
+1. [`alzheimers/elo_score.py`](alzheimers/elo_score.py) — generates the pairwise
+   comparisons and Elo scores (requires `OPENROUTER_API_KEY`):
+   ```
+   python -m analysis.alzheimers.elo_score \
+       --output-dir $CASCADE_DATA_ROOT/SEATTLE/gene_explainer_validation
+   ```
+   Output naming matches what step 2 expects to read
+   (`results_{intermediate,major}_{ad,control}_elo_elo.csv`).
+2. [`alzheimers/elo_loci_style_plots.py`](alzheimers/elo_loci_style_plots.py) — the
+   correlation plots themselves:
+   ```
+   python -m analysis.alzheimers.elo_loci_style_plots \
+       --elo-dir $CASCADE_DATA_ROOT/SEATTLE/gene_explainer_validation \
+       --output-dir $CASCADE_DATA_ROOT/SEATTLE/gene_explainer_validation
+   ```
 
-| Piece | Status | Script |
-|---|---|---|
-| Aggregation of cell-type importance across VS-grade stages (Fig. 5c) | ✅ | `huntingtons/vsgrade_importance_plot.py` |
-| Correlation between donor-specific cell-type drivers and clinical features, forest plot (Fig. 5d) | ✅ | `huntingtons/correlations_forestplot.py` |
-| Donor-level variability heatmaps, benign vs pathogenic CAG (Fig. 5e) | ✅ | `huntingtons/donor_heatmaps.py` |
+**Panels d-f — eQTL/GWAS colocalization and external reference-set enrichment**: not
+yet included.
 
-## 2.7 — CASCADE enables molecular and clinical stratification of Huntington's disease patients
-*(Figure 5f-g; k=2 clustering on donor-specific cell-type importance profiles)*
+**Canonical cell-type gene-programme recovery** (healthy-only SEATTLE validation,
+restricted to non-diseased participants to rule out disease confounding):
+1. [`alzheimers/healthy_celltype_markers.py`](alzheimers/healthy_celltype_markers.py) —
+   builds the grouped cell-type marker (DE) ground truth from healthy donors:
+   ```
+   python -m analysis.alzheimers.healthy_celltype_markers \
+       --h5ad-dir $CASCADE_DATA_ROOT/SEATTLE/adata_objects \
+       --output-dir $CASCADE_DATA_ROOT/SEATTLE/healthy_grouped_cell_type_markers \
+       --cell-type-col cell_type --health-col disease --healthy-values 0 \
+       --gene-col ensembl_gene_id --h5ad-pattern "adata_annotated_protein_clinical_fin_*.h5ad"
+   ```
+2. [`alzheimers/attention_baseline.py`](alzheimers/attention_baseline.py) — the
+   attention-derived gene-importance baseline:
+   ```
+   python -m analysis.alzheimers.attention_baseline \
+       --output_path ./attention_outputs/attention_baseline_SEATTLE_cell_type.pkl \
+       --dataset_name SEATTLE --task cell_type \
+       --transformer_checkpoint /path/to/checkpoint.pt
+   ```
+3. [`alzheimers/gt_analysis.py`](alzheimers/gt_analysis.py) — compares CASCADE,
+   attention, and DE rankings against the ground truth (proportion-based and
+   AUROC-based, both with 2-4 ground-truth sources):
+   ```
+   python -m analysis.alzheimers.gt_analysis \
+       --data-dir $CASCADE_DATA_ROOT/SEATTLE/gene_explainer_validation \
+       --ground-truth-sources txt paper
+   ```
+4. [`alzheimers/create_combined_gt_viz.py`](alzheimers/create_combined_gt_viz.py) —
+   the headline grouped-bar figure (CASCADE vs. attention-baseline vs. DEG, AUROC vs.
+   2 ground-truth sources):
+   ```
+   python -m analysis.alzheimers.create_combined_gt_viz \
+       --data-dir $CASCADE_DATA_ROOT/SEATTLE/gene_explainer_validation \
+       --cascade-ranks $CASCADE_DATA_ROOT/SEATTLE/median_gene_ranks_corrected.csv
+   ```
 
-| Piece | Status | Script |
-|---|---|---|
-| Primary clustering per CAG model, best-k selected by silhouette (k=2 for both models on real data), clinical bar chart + cell-type heatmaps (Fig. 5f) | ✅ | `huntingtons/clustering_analysis.py` |
-| Silhouette diagnostic plots | ✅ | `huntingtons/silhouette_plots.py` |
-| Cluster-overlap / concordance analysis between benign and pathogenic CAG clusters, cross-tabulation + clinical comparison (Fig. 5g) | ✅ | `huntingtons/cluster_overlap_analysis.py` |
-| Publication figure for clinical differences between overlap groups | ✅ | `huntingtons/cluster_overlap_figure.py` |
-| Supplementary: violin-plot cluster-vs-clinical comparison (age/onset/VS grade/both CAG lengths) | ✅ | `huntingtons/cluster_clinical_violin.py` |
-| Supplementary: console p-value report | ✅ | `huntingtons/cluster_pvalues.py` |
+## Figure 4 (CASCADE-Explainer recovers thyroid hormone and receptor-regulatory gene signatures)
+*(Supplementary Notes 22-23)*
 
-Figure 5c-g is now fully covered — this was the last real gap in the Huntington's case study.
+Mixed Python + R pipeline. Run the Python DE baseline first, then the numbered R
+pipeline (each R script is self-documenting — see its header comment for inputs/outputs).
 
-**Fixed bug, verified against real data:** all of the scripts above extract per-donor
-attention importance via `huntingtons/hd_attention_utils.create_donor_df`. The originally
-uploaded version of this helper (repeated near-identically across 6 of the 7 new scripts)
-filtered `attention_weights` by a `valid` (non-NaN `patient_y`) boolean mask but then indexed
-`patient_ids`/`patient_y`/`patient_cell_types` with the same loop variable *unfiltered* — mixing
-a compacted index space with the raw one. Checked against the actual `CAG_1_1107.npz` /
-`CAG_2_1107.npz` caches: this silently dropped exactly 1 of 52 valid donors per CAG model (the
-last valid donor's compacted index happened to land on a different, invalid donor's raw
-position, tripping the `if not valid[i]: continue` guard) — not a large-scale identity
-scramble, but a real, silent exclusion. `vsgrade_importance_plot.py` (from
-`run_combined_vsgrade_plot.py`) was the one script that already filtered all three arrays
-consistently and did not have this bug. Fixed in `hd_attention_utils.create_donor_df`, applied
-everywhere, and verified: `create_donor_df` now returns all 52 valid donors instead of 51.
+1. **M2 differential-expression baseline** for the treatment/DN-THRα prediction
+   tasks: [`thyroid_hormone/scripts/03_m2_differential_expression.py`](thyroid_hormone/scripts/03_m2_differential_expression.py)
+   ```
+   python -m analysis.thyroid_hormone.scripts.03_m2_differential_expression \
+       --h5ad-path $CASCADE_DATA_ROOT/M2/adata_objects/adata_annotated_protein_coding_clinical.h5ad
+   ```
+   Produces the `de_pooled_*.csv`/`de_cell_type_specific_*.csv` files consumed by
+   step 2 below.
+2. **R pipeline** (ground truth construction, standardisation, gene universes,
+   filtering variants, 10 aggregation methods, benchmarking, CASCADE-vs-DE comparison,
+   cell-type-specific analysis, Excel export) — 20 scripts under
+   [`thyroid_hormone/scripts/`](thyroid_hormone/scripts/), starting from
+   [`00_config.R`](thyroid_hormone/scripts/00_config.R) (source it at the top of
+   every downstream script) and running in numeric-prefix order.
 
-## 2.8-2.9 — CASCADE-Explainer recovers thyroid hormone and receptor-regulatory gene signatures
-*(Figure 4; Supplementary Notes 22-23)*
+## Figure 5 (Huntington's disease case study)
 
-| Piece | Status | Script |
-|---|---|---|
-| M2 differential-expression baseline for the treatment/DN-THRα prediction tasks ("findings ... compared with a matched DE baseline for both the treatment and DN-THRα prediction tasks") | ✅ | `thyroid_hormone/scripts/03_m2_differential_expression.py` — Python, feeds directly into `04_standardize_de_baselines.R` (verified its output columns match that script's `required_cols` exactly) |
-| Full pipeline: ground truth construction, standardization, gene universes, filtering variants, 10 aggregation methods, benchmarking, cascade-vs-DE comparison (hit-set + ranking + combined-set), cell-type-specific (astrocyte/glut. neuron) analysis, Excel export | ✅ | `thyroid_hormone/` (20 R scripts — see `thyroid_hormone/scripts/00_config.R` for the pipeline order) |
+**Panels a-b — multiscale phenotype prediction** (CAG repeat lengths, VS grade,
+motor/cognitive onset):
+- Donor-level attention-probe prediction: [`huntingtons/donor_level_prediction.py`](huntingtons/donor_level_prediction.py) `--embeddings-path /path/to/embeddings.pkl`
+- Cell-level linear-probe prediction: [`huntingtons/cell_level_prediction.py`](huntingtons/cell_level_prediction.py) `--embeddings-path /path/to/embeddings.pkl`
+- Raw pseudobulk/cell-level linear-regression baseline: [`huntingtons/baseline_linear_regression.py`](huntingtons/baseline_linear_regression.py) `--adata-path /path/to/HH.h5ad`
 
-This is the most complete analysis folder in the repo — the numbered R pipeline plus its
-Python DE-baseline precursor (`03_m2_differential_expression.py`, added once the DE
-baseline's exact provenance was confirmed against the paper text). One thing to be aware
-of: none of the R scripts have actually been *run* against real data in this environment
-(R/data files weren't available), so they're verified by parsing and functional smoke
-tests on synthetic data only, not by reproducing your actual published numbers end to
-end. `03_m2_differential_expression.py`, by contrast, *was* run end-to-end on synthetic
-M2-shaped data (Python + scanpy were available).
+**Panels c-e — cell-type programmes vs. severity and CAG repeat length** (all read the
+`HD_models_scale/{CAG_1,CAG_2,VSGRADE}_1107.npz` attention caches):
+- Aggregated cell-type importance across VS-grade stages (5c): [`huntingtons/vsgrade_importance_plot.py`](huntingtons/vsgrade_importance_plot.py) `--vsgrade-npz .../VSGRADE_1107.npz --output-dir .`
+- Correlation between donor-specific cell-type drivers and clinical features, forest
+  plot (5d): [`huntingtons/correlations_forestplot.py`](huntingtons/correlations_forestplot.py)
+- Donor-level variability heatmaps, benign vs. pathogenic CAG (5e): [`huntingtons/donor_heatmaps.py`](huntingtons/donor_heatmaps.py)
 
-## Preprocessing coverage (outside `analysis/`, Methods 9.1-9.4)
+**Panels f-g — molecular and clinical patient stratification** (k=2 clustering on
+donor-specific cell-type importance profiles), run in this order:
+1. [`huntingtons/silhouette_plots.py`](huntingtons/silhouette_plots.py) — diagnostic
+   plots for selecting k.
+2. [`huntingtons/clustering_analysis.py`](huntingtons/clustering_analysis.py) — primary
+   clustering per CAG model, clinical bar chart + cell-type heatmaps (5f).
+3. [`huntingtons/cluster_overlap_analysis.py`](huntingtons/cluster_overlap_analysis.py) —
+   concordance between benign and pathogenic CAG clusters, cross-tabulation + clinical
+   comparison (5g), followed by [`huntingtons/cluster_overlap_figure.py`](huntingtons/cluster_overlap_figure.py)
+   `--overlap-csv cluster_overlap_donors.csv --output-dir .` for the publication figure.
+4. Supplementary: [`huntingtons/cluster_clinical_violin.py`](huntingtons/cluster_clinical_violin.py)
+   (violin-plot cluster-vs-clinical comparison) and [`huntingtons/cluster_pvalues.py`](huntingtons/cluster_pvalues.py)
+   (console p-value report).
 
-| Piece | Status | Script |
-|---|---|---|
-| Clinical/donor-level metadata pre-processing (Methods 9.3), all 6 paper datasets | ✅ | `preprocessing/clinical_metadata_{autism,hlca,m2,luca,hh,seattle}.py`, shared helpers in `preprocessing/clinical_metadata_utils.py` |
-| Scanpy QC/normalisation pipeline: filtering, normalise, log1p, HVG, scale (Methods 9.2) — HLCA/LUCA/M2 | ✅ | `preprocessing/qc_scanpy.py`, shared helpers in `preprocessing/qc_pipeline.py` |
-| Same, AUTISM (raw 10x-style mtx input instead of a cellxgene h5ad) | ✅ | `preprocessing/qc_scanpy_autism.py` |
-| Same, Seattle-AD (out-of-core scarf/Dask pipeline, used because of dataset size) | ✅ | `preprocessing/qc_scarf_seattle.py` |
-| BioMart/GTF gene annotation + dedup by Ensembl ID/NCBI ID/symbol (Methods 9.2) | ✅ | `preprocessing/gene_annotation.py` |
-| PCA/neighbours/Leiden/UMAP + marker-gene ranking (Methods 9.2) | ✅ | `preprocessing/clustering_umap.py` |
-| Majority-vote cluster-to-cell-type annotation + metadata UMAP QC plots | ✅ | `preprocessing/celltype_annotation.py` |
-| GENCODE protein-coding/miRNA gene-type annotation | ✅ | `preprocessing/protein_coding_annotation.py` |
-| LUCA batch-effect correction via per-gene OLS regression (Methods 9.2) | ✅ | `preprocessing/batch_effect_regression.py` |
-| Per-context (cell type/tissue/disease) non-zero median expression reference (Methods 9.4) | ✅ | `preprocessing/context_median_reference.py` |
-| Donor-level stratified train/test split, ensuring every clinical category has >=1 training donor (Methods 9.11) | ✅ | `preprocessing/donor_stratified_split.py` — generator for the fixed splits already checked into `cascade/data/splits.py`; re-running isn't required to reproduce the paper |
-| Builds the tokenizer/metadata dictionaries and runs tokenisation per dataset+context (Methods 9.4) | ✅ | `preprocessing/build_tokenizer_metadata.py`, plus `preprocessing/rename_tokenized_chunks.py` and `scripts/flatten_arrow_dataset_dirs.sh` (batch-output file-layout utilities) |
-| Context-aware tokenizer: fold-change ranking, up-/down-regulated token sequences (Methods 9.4) | ✅ | `cascade/data/tokenizer.py` (core package, not `analysis/`) |
-| HH (Huntington's) raw QC/annotation/tokenization (clinical metadata is covered, above) | ❌ | **needs upload** — HH analysis scripts (2.5-2.7) consume pre-extracted attention/embedding caches, not raw counts, so this gap doesn't block the HD case study |
-
-A batch of scripts for datasets never mentioned anywhere in the paper text (AUTISM-BULK,
-AUTISM-ORGANOIDS, GEO, CHOOSE — a bulk RNA-seq cohort, an organoid CRISPR-perturbation
-model, and two exploratory/external datasets) was also uploaded but deliberately **not**
-ported: grepping the full paper text confirms none of these four dataset names appear
-anywhere, so they're internal-codebase side projects outside this submission's scope. The
-ATC drug-mapping module built specifically for AUTISM-BULK's free-text medication notes
-(`P1h`/`P1i`) was dropped for the same reason. An ontology-term-to-integer mapping script
-(`P6`) was also left unported: it has a missing dependency (a MONDO-to-ICD9 mapping CSV)
-and its exact Methods-text grounding was unclear, so rather than guess at its content it's
-just noted here as available in the original upload if it's needed later.
-
-Bugs fixed while porting, verified against synthetic data reproducing the original
-scripts' exact logic (no real raw counts were available to test against, but each bug
-was confirmed to be deterministic given the described operations, not data-dependent):
-- `qc_scanpy.py` (from `02_cells_processing.py`): dropped an abandoned/broken
-  in-memory 3-way-split code block for Seattle-AD (referenced undefined variables
-  `n_genes`/`genedata_filtered` and would `NameError`) — Seattle-AD's real path is the
-  scarf-based `qc_scarf_seattle.py`, consistent with the paper's Methods 9.2 statement
-  that AD used scarf specifically because of dataset size.
-- `qc_scanpy_autism.py` (from `02_cells_processing-autism.py`): `matplotlib.pyplot`
-  was used without being imported (`NameError` on the first plot).
-- `gene_annotation.py` (from `03_annotations.py`): the non-HLCA/M2 path manually
-  re-added an `ensembl_gene_id` column immediately before `reset_index()`, but the
-  index was already named `ensembl_gene_id` at that point, so `reset_index()` tried
-  to create a duplicate column and pandas raised `ValueError: cannot insert
-  ensembl_gene_id, already exists`. Reproduced deterministically with a synthetic
-  LUCA-shaped run; fixed by dropping the redundant assignment.
-- `batch_effect_regression.py` (from `07a_batch_effect_regression.py`): the output
-  filename used a literal `'processed_data_batch_effect_{key}.h5ad'` (missing the
-  f-string prefix), so all three regressor variants (platform/dataset/both) silently
-  overwrote the same file instead of writing three separate ones.
-- `cascade/data/tokenizer.py` (from `tokenisers_chunks.py`): `save_batch`'s real
-  save path was dead code — a parameterized `output_path` was computed and then
-  immediately overwritten by a second, hardcoded personal-cluster path that ignored
-  the `output_directory`/`output_prefix`/batch arguments entirely. Fixed to use the
-  parameterized path; verified end-to-end with a batched synthetic tokenization run
-  (5 batches, all cells accounted for, no hardcoded paths in the output).
-- `clinical_metadata_autism.py` and `clinical_metadata_hh.py`: both build/pass through
-  clinical column names containing `/` (`'Attention-deficit/hyperactivity disorder'`
-  as a comorbidity condition; `'Onset/Motor'`/`'Onset/Cog'` as literal HH clinical
-  fields). h5ad is HDF5-based, which forbids `/` in dataset/group keys, so
-  `adata.write()` would crash as soon as any of these reached `.obs`. Confirmed by
-  writing a synthetic AnnData with the exact same column names, which reproduces the
-  crash deterministically before the fix and succeeds after (sanitized to `-`/`_`).
-- `clinical_metadata_utils.py`'s `export_value_counts_excel`: Excel sheet names are
-  case-insensitive for uniqueness, and AUTISM's own column list has both `'sex'` and
-  `'Sex'` — writing both as sheets crashed with `DuplicateWorksheetName`. Reproduced
-  with the real AUTISM column list; fixed by deduplicating sheet names case-insensitively.
-
-All scripts above were smoke-tested end-to-end on synthetic data shaped like a real
-run (raw counts -> QC -> annotation -> clustering -> protein-coding filter ->
-batch-effect regression -> median reference -> clinical metadata -> donor split ->
-tokenizer-metadata build -> tokenization), not just compiled. The M2 differential
-expression baseline (`analysis/thyroid_hormone/scripts/03_m2_differential_expression.py`,
-see below) was also run end-to-end and its output columns checked against what
-`04_standardize_de_baselines.R` requires.
-
-## Summary of what's needed next
-
-1. **Figure 3d-f** (eQTL/GWAS colocalization, external reference-set enrichment) — LLM-arena (3b-c) is now covered.
-2. **HH raw preprocessing** (low priority — the HD analysis scripts consume
-   pre-extracted attention caches, not raw counts, so this doesn't block anything
-   in `analysis/huntingtons/`).
-
-The Huntington's disease case study (2.5-2.7, Figure 5), the Alzheimer's canonical
-cell-type recovery section (2.4), the baseline-model evaluation pattern (2.2), and
-the QC/annotation/tokenization preprocessing pipeline (Methods 9.2-9.4, all datasets
-except HH's raw counts) are now all covered.
+All four scripts in this group take the same `--cag1-npz`/`--cag2-npz` arguments,
+e.g. `HD_models_scale/CAG_1_1107.npz` / `HD_models_scale/CAG_2_1107.npz`.

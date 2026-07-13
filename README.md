@@ -8,7 +8,7 @@
   <a href="https://valegiunchiglia.github.io/cascade-website/"><img src="https://img.shields.io/badge/Project%20Page-valegiunchiglia.github.io%2Fcascade--website-14b8a6" alt="Project Page"></a>
   <a href="https://github.com/mims-harvard/CASCADE"><img src="https://img.shields.io/badge/Code-mims--harvard%2FCASCADE-181717?logo=github&logoColor=white" alt="Code"></a>
   <img src="https://img.shields.io/badge/Paper-coming%20soon-lightgrey" alt="Paper (coming soon)">
-  <img src="https://img.shields.io/badge/HuggingFace-coming%20soon-lightgrey?logo=huggingface&logoColor=white" alt="HuggingFace (coming soon)">
+  <a href="https://huggingface.co/mims-harvard"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-mims--harvard-FFD21E" alt="HuggingFace"></a>
 </p>
 
 CASCADE is a context-aware, multiscale single-cell foundation model. During pre-training it
@@ -51,45 +51,19 @@ CASCADE/
 │                              #   donor-level metadata cleaning, donor-level stratified splitting,
 │                              #   the per-context median expression reference, and the scripts
 │                              #   that build the tokenizer's dictionaries (Methods 9.2-9.4;
-│                              #   see analysis/README.md for per-dataset status)
+│                              #   see analysis/README.md for the run order per dataset)
 ├── analysis/
 │   ├── benchmarking/           # 4-dataset, 51-task benchmark vs. baselines; sensitivity analyses
 │   ├── alzheimers/              # CASCADE-Explainer cell-type / gene-programme recovery (SEATTLE)
 │   ├── huntingtons/             # patient stratification, CAG repeat burden, neuropathology
 │   ├── thyroid_hormone/         # hormone-response / receptor-signalling perturbation (R pipeline)
-│   └── README.md                # maps every script here to a paper section/figure, and lists
-│                                 #   what's present vs. still needs to be uploaded
+│   └── README.md                # maps every script to a paper figure and documents run order
 └── scripts/                   # SLURM/job launchers (.sh) for the entrypoints above
 ```
 
 `cascade/` is the reusable package; everything under `analysis/` is a standalone script (or,
 for `thyroid_hormone/`, an R pipeline) that consumes frozen CASCADE embeddings or checkpoints
 and is meant to be run, not imported.
-
-## Status
-
-This repository is being assembled incrementally, paper section by paper section. **See
-[`analysis/README.md`](analysis/README.md) for the authoritative map of which scripts exist,
-which paper analyses they correspond to, and which are still missing.** In short:
-
-- **Core model, training, and explainer package (`cascade/`)** — complete.
-- **Benchmarking (Fig. 2)** — CASCADE-side prediction sweep complete; only 1 of 8 baselines
-  (Geneformer, and only for LUCA) has been ported so far.
-- **Alzheimer's disease case study (Fig. 3)** — LLM-arena literature-evidence comparison (3b-c) is
-  in place; eQTL/GWAS colocalization (3d-e) and the external reference-set panel (3f) are missing.
-- **Alzheimer's disease case study (canonical cell-type recovery)** — complete: ground truth,
-  attention baseline, and the CASCADE-vs-baseline AUROC comparison are all in place.
-- **Huntington's disease case study (Fig. 5)** — complete: prediction (5a-b), cell-type-importance
-  vs. severity (5c-e), and clustering/stratification (5f-g) are all in place.
-- **Thyroid hormone case study (Fig. 4)** — complete, most mature analysis folder in the repo,
-  including its M2 differential-expression baseline precursor script.
-- **Preprocessing (Methods 9.2-9.4)** — QC/normalisation, gene annotation, clustering,
-  batch-effect correction, per-context median reference, clinical/donor-level metadata cleaning,
-  donor-level stratified splitting, and the context-aware tokenizer (plus the scripts that build
-  its dictionaries) are all in place, covering every dataset actually used in the paper except
-  HH's raw QC/annotation/tokenization (HH's clinical metadata cleaning is covered; the HD analysis
-  scripts consume pre-extracted attention caches rather than raw counts, so this doesn't block
-  anything downstream).
 
 ## Installation
 
@@ -105,8 +79,23 @@ generated. For reference, the Python side currently depends on:_ `torch`, `datas
 
 Data are not included in this repository. Paths are resolved via the `CASCADE_DATA_ROOT` and
 `CASCADE_CKPT_ROOT` environment variables (see `scripts/*.sh` for examples) rather than being
-hardcoded, so the repo is portable across environments — but the underlying datasets, tokenized
-Arrow shards, and trained checkpoints still need to be sourced/downloaded separately per dataset.
+hardcoded, so the repo is portable across environments. Pretrained checkpoints are on
+HuggingFace (see below); the underlying raw datasets and tokenized Arrow shards still need to
+be sourced separately per dataset.
+
+## Pretrained models
+
+Pretrained CASCADE checkpoints, one per pretraining cohort, are hosted on HuggingFace under
+[mims-harvard](https://huggingface.co/mims-harvard). Each model page also documents the
+dataset it was pretrained on.
+
+| Cohort | Model |
+|---|---|
+| Seattle-AD (Alzheimer's) | [mims-harvard/CASCADE-Alzheimer](https://huggingface.co/mims-harvard/CASCADE-Alzheimer) |
+| Autism | [mims-harvard/CASCADE-AUTISM](https://huggingface.co/mims-harvard/CASCADE-AUTISM) |
+| Mouse-thyroid | [mims-harvard/CASCADE-THYROID](https://huggingface.co/mims-harvard/CASCADE-THYROID) |
+| LuCA (lung cancer atlas) | [mims-harvard/CASCADE-LUCA](https://huggingface.co/mims-harvard/CASCADE-LUCA) |
+| HLCA (Human Lung Cell Atlas) | [mims-harvard/CASCADE-HLCA](https://huggingface.co/mims-harvard/CASCADE-HLCA) |
 
 ## Reproducing the analyses
 
