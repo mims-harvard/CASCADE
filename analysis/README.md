@@ -7,7 +7,7 @@ only the required/most relevant flags.
 
 Before running anything here, follow the [main README](../README.md) for installation
 and set `CASCADE_DATA_ROOT`/`CASCADE_CKPT_ROOT` to point at your copy of the datasets
-and trained checkpoints (see [Data](../README.md#data)). Pretrained checkpoints
+and trained checkpoints (see [Data & pretrained models](../README.md#data--pretrained-models)). Pretrained checkpoints
 themselves are produced by `cascade/training/` (see `scripts/*.sh` for SLURM launch
 examples) — the analyses below all start from a *frozen* checkpoint or its extracted
 embeddings, not from raw data.

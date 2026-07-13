@@ -76,27 +76,23 @@ generated. For reference, the Python side currently depends on:_ `torch`, `datas
 `stringr`, `data.table`, `janitor`, `pROC`, `openxlsx`, `readxl`, `Seurat`, `AnnotationDbi`,
 `org.Mm.eg.db`, `biomaRt`.
 
-## Data
+## Data & pretrained models
 
-Data are not included in this repository. Paths are resolved via the `CASCADE_DATA_ROOT` and
-`CASCADE_CKPT_ROOT` environment variables (see `scripts/*.sh` for examples) rather than being
-hardcoded, so the repo is portable across environments. Pretrained checkpoints are on
-HuggingFace (see below); the underlying raw datasets and tokenized Arrow shards still need to
-be sourced separately per dataset.
-
-## Pretrained models
+Raw data and trained checkpoints are not included in this repository. Paths are resolved via
+the `CASCADE_DATA_ROOT` and `CASCADE_CKPT_ROOT` environment variables (see `scripts/*.sh` for
+examples) rather than being hardcoded, so the repo is portable across environments.
 
 Pretrained CASCADE checkpoints, one per pretraining cohort, are hosted on HuggingFace under
-[mims-harvard](https://huggingface.co/mims-harvard). Each model page also documents the
-dataset it was pretrained on.
+[mims-harvard](https://huggingface.co/mims-harvard); each model page also documents the exact
+dataset it was pretrained on. The table below links both.
 
-| Cohort | Model |
-|---|---|
-| Seattle-AD (Alzheimer's) | [mims-harvard/CASCADE-Alzheimer](https://huggingface.co/mims-harvard/CASCADE-Alzheimer) |
-| Autism | [mims-harvard/CASCADE-AUTISM](https://huggingface.co/mims-harvard/CASCADE-AUTISM) |
-| Mouse-thyroid | [mims-harvard/CASCADE-THYROID](https://huggingface.co/mims-harvard/CASCADE-THYROID) |
-| LuCA (lung cancer atlas) | [mims-harvard/CASCADE-LUCA](https://huggingface.co/mims-harvard/CASCADE-LUCA) |
-| HLCA (Human Lung Cell Atlas) | [mims-harvard/CASCADE-HLCA](https://huggingface.co/mims-harvard/CASCADE-HLCA) |
+| Cohort | Model | Raw data |
+|---|---|---|
+| Seattle-AD (Alzheimer's) | [mims-harvard/CASCADE-Alzheimer](https://huggingface.co/mims-harvard/CASCADE-Alzheimer) | [CZ CELLxGENE collection](https://cellxgene.cziscience.com/collections/1ca90a2d-2943-483d-b678-b809bf464c30) |
+| Autism | [mims-harvard/CASCADE-AUTISM](https://huggingface.co/mims-harvard/CASCADE-AUTISM) | [UCSC Cell Browser](https://cells.ucsc.edu/?ds=autism) |
+| Mouse-thyroid | [mims-harvard/CASCADE-THYROID](https://huggingface.co/mims-harvard/CASCADE-THYROID) | [CZ CELLxGENE collection](https://cellxgene.cziscience.com/collections/c450e15d-321a-42d6-986b-11409d04896d) |
+| LuCA (lung cancer atlas) | [mims-harvard/CASCADE-LUCA](https://huggingface.co/mims-harvard/CASCADE-LUCA) | [CZ CELLxGENE collection](https://cellxgene.cziscience.com/collections/6f6d381a-7701-4781-935c-db10d30de293) |
+| HLCA (Human Lung Cell Atlas) | [mims-harvard/CASCADE-HLCA](https://huggingface.co/mims-harvard/CASCADE-HLCA) | [CZ CELLxGENE collection](https://cellxgene.cziscience.com/collections/edb893ee-4066-4128-9aec-5eb2b03f8287) |
 
 ## Pretraining
 
@@ -133,7 +129,7 @@ trained on it.
 
 Three steps, in order:
 
-1. **Download a pretrained checkpoint** from HuggingFace (see [Pretrained models](#pretrained-models)
+1. **Download a pretrained checkpoint** from HuggingFace (see [Data & pretrained models](#data--pretrained-models)
    for the full list):
    ```bash
    huggingface-cli download mims-harvard/CASCADE-HLCA --local-dir ./CASCADE-HLCA
