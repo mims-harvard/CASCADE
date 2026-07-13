@@ -52,8 +52,7 @@ CASCADE/
 │                              #   annotation, clustering, batch-effect correction, clinical/
 │                              #   donor-level metadata cleaning, donor-level stratified splitting,
 │                              #   the per-context median expression reference, and the scripts
-│                              #   that build the tokenizer's dictionaries (Methods 9.2-9.4;
-│                              #   see analysis/README.md for the run order per dataset)
+│                              #   that build the tokenizer's dictionaries
 ├── analysis/
 │   ├── benchmarking/           # 4-dataset, 51-task benchmark vs. baselines; sensitivity analyses
 │   ├── alzheimers/              # CASCADE-Explainer cell-type / gene-programme recovery (SEATTLE)
