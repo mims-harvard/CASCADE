@@ -7,27 +7,6 @@
 <h2 align="center">CASCADE: context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes</h2>
 
 <p align="center">
-Valentina Giunchiglia<sup>1,2,3</sup>, Owen Queen<sup>1,4</sup>, Xiang Lin<sup>1</sup>, Zaneta Matuszek<sup>5</sup>, Daniel Hochbaum, Aarthi Venkat, Gianmarco Abbadessa, Walker Rickord, Richard Nicholas<sup>2</sup>, Paola Arlotta<sup>5</sup>, Marinka Zitnik<sup>1,6,7,8,‡</sup>
-</p>
-
-<p align="center">
-<sub>
-<sup>1</sup>Department of Biomedical Informatics, Harvard Medical School, Boston, MA, USA &nbsp;·&nbsp;
-<sup>2</sup>Department of Brain Sciences, Imperial College London, London, UK &nbsp;·&nbsp;
-<sup>3</sup>Centre for Neuroimaging Sciences, King's College London, London, UK<br>
-<sup>4</sup>Department of Computer Science, Stanford University, Stanford, CA, USA &nbsp;·&nbsp;
-<sup>5</sup>Department of Stem Cell and Regenerative Biology, Harvard, Boston, MA, USA<br>
-<sup>6</sup>Kempner Institute for the Study of Natural and Artificial Intelligence, Harvard University, MA, USA &nbsp;·&nbsp;
-<sup>7</sup>Broad Institute of MIT and Harvard, Cambridge, MA, USA<br>
-<sup>8</sup>Harvard Data Science Initiative, Cambridge, MA, USA
-</sub>
-</p>
-
-<p align="center">
-<sub><sup>‡</sup>Corresponding author: <a href="mailto:marinka@hms.harvard.edu">marinka@hms.harvard.edu</a></sub>
-</p>
-
-<p align="center">
   <a href="https://valegiunchiglia.github.io/cascade-website/"><img src="https://img.shields.io/badge/Project%20Page-valegiunchiglia.github.io%2Fcascade--website-14b8a6" alt="Project Page"></a>
   <a href="https://github.com/mims-harvard/CASCADE"><img src="https://img.shields.io/badge/Code-mims--harvard%2FCASCADE-181717?logo=github&logoColor=white" alt="Code"></a>
   <img src="https://img.shields.io/badge/Paper-bioRxiv%20coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="Paper (bioRxiv, coming soon)">
@@ -163,9 +142,6 @@ For the exact analyses and figures reported in the paper, see
 
 ## Citation
 
-A preprint describing CASCADE is forthcoming on bioRxiv (link/DOI TBD). Until it's
-posted, please cite:
-
 ```bibtex
 @article{giunchiglia2026cascade,
   title   = {CASCADE: context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes},
@@ -178,17 +154,6 @@ posted, please cite:
   url     = {TBD}
 }
 ```
-
-You can also reference the software and pretrained models directly:
-
-- CASCADE software: https://github.com/mims-harvard/CASCADE/
-- CASCADE website: https://valegiunchiglia.github.io/cascade-website/
-- CASCADE models:
-  - CASCADE-Alzheimer: https://huggingface.co/mims-harvard/CASCADE-Alzheimer
-  - CASCADE-Autism: https://huggingface.co/mims-harvard/CASCADE-AUTISM
-  - CASCADE-Thyroid: https://huggingface.co/mims-harvard/CASCADE-THYROID
-  - CASCADE-Lung: https://huggingface.co/mims-harvard/CASCADE-LUCA
-  - CASCADE-HLCA: https://huggingface.co/mims-harvard/CASCADE-HLCA
 
 ## Contact
 
