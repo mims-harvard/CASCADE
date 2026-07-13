@@ -4,10 +4,33 @@
   </a>
 </p>
 
+<h2 align="center">CASCADE: context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes</h2>
+
+<p align="center">
+Valentina Giunchiglia<sup>1,2,3</sup>, Owen Queen<sup>1,4</sup>, Xiang Lin<sup>1</sup>, Zaneta Matuszek<sup>5</sup>, Daniel Hochbaum, Aarthi Venkat, Gianmarco Abbadessa, Walker Rickord, Richard Nicholas<sup>2</sup>, Paola Arlotta<sup>5</sup>, Marinka Zitnik<sup>1,6,7,8,‡</sup>
+</p>
+
+<p align="center">
+<sub>
+<sup>1</sup>Department of Biomedical Informatics, Harvard Medical School, Boston, MA, USA &nbsp;·&nbsp;
+<sup>2</sup>Department of Brain Sciences, Imperial College London, London, UK &nbsp;·&nbsp;
+<sup>3</sup>Centre for Neuroimaging Sciences, King's College London, London, UK<br>
+<sup>4</sup>Department of Computer Science, Stanford University, Stanford, CA, USA &nbsp;·&nbsp;
+<sup>5</sup>Department of Stem Cell and Regenerative Biology, Harvard, Boston, MA, USA<br>
+<sup>6</sup>Kempner Institute for the Study of Natural and Artificial Intelligence, Harvard University, MA, USA &nbsp;·&nbsp;
+<sup>7</sup>Broad Institute of MIT and Harvard, Cambridge, MA, USA<br>
+<sup>8</sup>Harvard Data Science Initiative, Cambridge, MA, USA
+</sub>
+</p>
+
+<p align="center">
+<sub><sup>‡</sup>Corresponding author: <a href="mailto:marinka@hms.harvard.edu">marinka@hms.harvard.edu</a></sub>
+</p>
+
 <p align="center">
   <a href="https://valegiunchiglia.github.io/cascade-website/"><img src="https://img.shields.io/badge/Project%20Page-valegiunchiglia.github.io%2Fcascade--website-14b8a6" alt="Project Page"></a>
   <a href="https://github.com/mims-harvard/CASCADE"><img src="https://img.shields.io/badge/Code-mims--harvard%2FCASCADE-181717?logo=github&logoColor=white" alt="Code"></a>
-  <img src="https://img.shields.io/badge/Paper-coming%20soon-lightgrey" alt="Paper (coming soon)">
+  <img src="https://img.shields.io/badge/Paper-bioRxiv%20coming%20soon-b31b1b?logo=arxiv&logoColor=white" alt="Paper (bioRxiv, coming soon)">
   <a href="https://huggingface.co/mims-harvard"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-mims--harvard-FFD21E" alt="HuggingFace"></a>
 </p>
 
@@ -97,17 +120,66 @@ dataset it was pretrained on.
 | LuCA (lung cancer atlas) | [mims-harvard/CASCADE-LUCA](https://huggingface.co/mims-harvard/CASCADE-LUCA) |
 | HLCA (Human Lung Cell Atlas) | [mims-harvard/CASCADE-HLCA](https://huggingface.co/mims-harvard/CASCADE-HLCA) |
 
-## Reproducing the analyses
+## Pretraining
 
-Each subfolder under `analysis/` corresponds to one or more paper figures/Results sections.
-Start with [`analysis/README.md`](analysis/README.md) for the full script-to-figure map, then
-look at `scripts/*.sh` for example SLURM launch commands for the entrypoints that need one
-(training, embedding extraction, gene explanation).
+CASCADE is pretrained per-cohort with the context-specific contrastive objective (Methods
+9.10-9.11) via [`cascade/training/train_ddp.py`](cascade/training/train_ddp.py), which wraps
+the shared training loop in [`cascade/training/trainer.py`](cascade/training/trainer.py). It's
+a DDP entrypoint, so it's always launched with `torchrun` — with `--nproc_per_node=1` on a
+single GPU, or scaled up across nodes as in the SLURM example below. `--list_data` points at
+one or more tokenized dataset directories (output of the
+[preprocessing pipeline](analysis/README.md#preprocessing-methods-92-94)); `--dataset` must be
+a key in `cascade.data.splits.SPLITS_BY_DATASET`.
+
+```bash
+CASCADE_DATA_ROOT=/path/to/DATASET CASCADE_CKPT_ROOT=/path/to/checkpoints \
+torchrun --nproc_per_node=1 -m cascade.training.train_ddp \
+    --list_data "$CASCADE_DATA_ROOT/HLCA/DISEASE/DISEASE-ID.dataset" \
+    --dataset HLCA --batch 32 --nlayers 12 --cell_emb_style avg-pool \
+    --context_specific_projections --donors --DA --nepochs 50
+```
+
+For multi-node training, see [`scripts/hlca_multinode.sh`](scripts/hlca_multinode.sh) for a
+full SLURM launcher (checkpoint frequency, W&B logging, NCCL/rendezvous setup included).
+
+## Inference
+
+Downstream analyses consume *frozen* CASCADE embeddings rather than running the model live.
+Extract them from a trained (or [downloaded](#pretrained-models)) checkpoint with
+[`cascade/explainer/get_embeddings_parallel.py`](cascade/explainer/get_embeddings_parallel.py),
+also a `torchrun` entrypoint:
+
+```bash
+torchrun --nproc_per_node=1 -m cascade.explainer.get_embeddings_parallel \
+    --dataset HLCA --checkpoint /path/to/ckpt.pt --output-path /path/to/embeddings.pkl
+```
+
+This writes chunked embedding pickles (`*_rank_*_chunk_*.pkl`) that the donor-/cell-level
+prediction heads and CASCADE-Explainer scripts under `analysis/` read directly. See
+[`scripts/get_emb_parallel.sh`](scripts/get_emb_parallel.sh) for the multi-node SLURM version.
+
+For the exact analyses and figures reported in the paper, see
+[`analysis/README.md`](analysis/README.md).
 
 ## Citation
 
-A paper is in preparation; until it's posted, please cite this work by referencing the
-software and pretrained models directly:
+A preprint describing CASCADE is forthcoming on bioRxiv (link/DOI TBD). Until it's
+posted, please cite:
+
+```bibtex
+@article{giunchiglia2026cascade,
+  title   = {CASCADE: context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes},
+  author  = {Giunchiglia, Valentina and Queen, Owen and Lin, Xiang and Matuszek, Zaneta
+             and Hochbaum, Daniel and Venkat, Aarthi and Abbadessa, Gianmarco
+             and Rickord, Walker and Nicholas, Richard and Arlotta, Paola and Zitnik, Marinka},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {TBD},
+  url     = {TBD}
+}
+```
+
+You can also reference the software and pretrained models directly:
 
 - CASCADE software: https://github.com/mims-harvard/CASCADE/
 - CASCADE website: https://valegiunchiglia.github.io/cascade-website/
