@@ -104,22 +104,23 @@ Start with [`analysis/README.md`](analysis/README.md) for the full script-to-fig
 look at `scripts/*.sh` for example SLURM launch commands for the entrypoints that need one
 (training, embedding extraction, gene explanation).
 
-## Figures
-
-Some analysis scripts already produce publication-style figures directly (e.g.
-`analysis/benchmarking/luca/umap_visualization.py`,
-`analysis/huntingtons/cluster_overlap_figure.py`, and the `--plot` mode of the sensitivity
-scripts in `analysis/benchmarking/sensitivity/`). Most other scripts currently emit tables
-(CSV/RDS) rather than rendered plots — the final multi-panel paper figures (Figs. 1-5) are
-composite and were assembled downstream of these tables; that assembly step is not yet in the
-repo. If you want the repo to reproduce figure panels directly rather than just the underlying
-statistics, the relevant plotting code for each panel would need to be uploaded alongside its
-analysis script.
-
 ## Citation
 
-_TBD_
+A paper is in preparation; until it's posted, please cite this work by referencing the
+software and pretrained models directly:
+
+- CASCADE software: https://github.com/mims-harvard/CASCADE/
+- CASCADE website: https://valegiunchiglia.github.io/cascade-website/
+- CASCADE models:
+  - CASCADE-Alzheimer: https://huggingface.co/mims-harvard/CASCADE-Alzheimer
+  - CASCADE-Autism: https://huggingface.co/mims-harvard/CASCADE-AUTISM
+  - CASCADE-Thyroid: https://huggingface.co/mims-harvard/CASCADE-THYROID
+  - CASCADE-Lung: https://huggingface.co/mims-harvard/CASCADE-LUCA
+  - CASCADE-HLCA: https://huggingface.co/mims-harvard/CASCADE-HLCA
 
 ## Contact
 
-_TBD_
+For any questions or feedback, please open an issue in the
+[GitHub repository](https://github.com/mims-harvard/CASCADE) or contact
+[Valentina Giunchiglia](mailto:v.giunchiglia20@imperial.ac.uk) and
+[Marinka Zitnik](mailto:marinka@hms.harvard.edu).
