@@ -457,8 +457,14 @@ def ddp_main():
             filter_raw_data_by_cre(raw_data_dict)
         output_data_dict = trainer.model_generative.SeqDataset(raw_data_dict)
     else:
-        # `dataset` must already be a tokenized+shuffled HuggingFace Dataset assembled by
-        # the preprocessing pipeline (see preprocessing/) and loaded before this point.
+        # One-time step: load the tokenized Arrow shards named by --list_data (output
+        # of cascade.data.tokenizer.TranscriptomeTokenizer), shuffle them, and run them
+        # through the collator to produce the chunk pickles that the `chunks_collator`
+        # branch above reads on every subsequent run.
+        if rank == 0:
+            print(f"Rank {rank}: [{time.time():.2f}] Loading and shuffling tokenized dataset from --list_data")
+        dataset = trainer.utils.load_and_shuffle_tokenized_dataset(args.list_data)
+
         collator = trainer.DataCollatorContrastiveLearning(
             max_length_up=args.max_length_up, max_length_down=args.max_length_down, path_to_collator=path_to_collator,
         )

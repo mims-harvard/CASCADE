@@ -120,16 +120,35 @@ trained on it.
    tokenized dataset directory produced in step 2; `--dataset` must be a key in
    `cascade.data.splits.SPLITS_BY_DATASET`.
 
+   Training reads its data through an intermediate "collator chunks" cache
+   (`--collator_root`, pickle files built by
+   [`cascade/data/collator.py`](cascade/data/collator.py)) rather than the tokenized
+   Arrow shards directly, so every dataset needs a **one-time** run with
+   `--no-chunks_collator` to build that cache from `--list_data` before the fast,
+   repeatable path (`--chunks_collator`, the default) can be used for the actual
+   training runs:
+
    ```bash
    CASCADE_DATA_ROOT=/path/to/DATASET CASCADE_CKPT_ROOT=/path/to/checkpoints \
    torchrun --nproc_per_node=1 -m cascade.training.train_ddp \
        --list_data "$CASCADE_DATA_ROOT/HLCA/DISEASE/DISEASE-ID.dataset" \
+       --dataset HLCA --no-chunks_collator --batch 32 --nlayers 12 --cell_emb_style avg-pool \
+       --context_specific_projections --donors --DA --nepochs 50
+   ```
+
+   Every run after that (same `--dataset`/`--collator_root`) can drop
+   `--no-chunks_collator` and start straight from the cached chunks:
+
+   ```bash
+   CASCADE_DATA_ROOT=/path/to/DATASET CASCADE_CKPT_ROOT=/path/to/checkpoints \
+   torchrun --nproc_per_node=1 -m cascade.training.train_ddp \
        --dataset HLCA --batch 32 --nlayers 12 --cell_emb_style avg-pool \
        --context_specific_projections --donors --DA --nepochs 50
    ```
 
    For multi-node training, see [`scripts/hlca_multinode.sh`](scripts/hlca_multinode.sh) for a
-   full SLURM launcher (checkpoint frequency, W&B logging, NCCL/rendezvous setup included).
+   full SLURM launcher (checkpoint frequency, W&B logging, NCCL/rendezvous setup included) — it
+   uses the default (already-cached) path, so run the one-time step above first.
 
 ## Inference
 

@@ -1,7 +1,62 @@
 import pickle
+from pathlib import Path
 
 import torch
+from datasets import Dataset, Sequence, Value, concatenate_datasets
 from tqdm import tqdm
+
+# Covariate columns that get inconsistently inferred as int/float vs. string across
+# per-context tokenization shards (Methods 9.4); always cast to string so shards can
+# be concatenated. Harmless no-op for datasets/shards that don't have these columns.
+_COVARIATE_COLUMNS_TO_STRING = ["Cre", "THR_expr", "THR", "batch", "treatment"]
+
+
+def load_and_shuffle_tokenized_dataset(list_data):
+    """
+    Loads every `.arrow` shard under each directory in `list_data` (the output of
+    `cascade.data.tokenizer.TranscriptomeTokenizer`, e.g. one directory per batched
+    tokenization run) directly via `Dataset.from_file`, aligns dtypes that can drift
+    between shards, concatenates them, and shuffles. This is the `--list_data` input
+    to `cascade.training.train_ddp`.
+
+    Args:
+        list_data: a directory path, or list of directory paths (each containing
+            `.arrow` shard files), e.g. `args.list_data` from `train_ddp.py`.
+
+    Returns:
+        datasets.Dataset: the concatenated, shuffled dataset.
+    """
+    if not isinstance(list_data, list):
+        list_data = [list_data]
+
+    arrow_files = []
+    for path in list_data:
+        arrow_files.extend(
+            str(p) for p in Path(path).iterdir() if "arrow" in str(p) and "cache" not in str(p)
+        )
+    print(f"[load_and_shuffle_tokenized_dataset] Found {len(arrow_files)} shard(s)")
+
+    shards = []
+    common_columns = None
+    for arrow_file in arrow_files:
+        ds = Dataset.from_file(arrow_file)
+
+        if "input_ids" in ds.column_names:
+            inner_dtype = getattr(getattr(ds.features["input_ids"], "feature", None), "dtype", None)
+            if inner_dtype != "int32":
+                ds = ds.cast_column("input_ids", Sequence(Value("int32")))
+
+        for col in _COVARIATE_COLUMNS_TO_STRING:
+            if col in ds.column_names and getattr(ds.features[col], "dtype", None) != "string":
+                ds = ds.cast_column(col, Value("string"))
+
+        shards.append(ds)
+        common_columns = set(ds.column_names) if common_columns is None else common_columns & set(ds.column_names)
+
+    # Some shards may be missing columns others have (e.g. if tokenization ran in
+    # separate chunks); restrict to the columns common to every shard before concatenating.
+    shards = [ds.select_columns(list(common_columns)) for ds in shards]
+    return concatenate_datasets(shards).shuffle()
 
 
 def check_cuda_memory():
