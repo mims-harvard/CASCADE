@@ -68,7 +68,7 @@ and is meant to be run, not imported.
 
 ## Installation
 
-Python 3.9, pinned to the exact versions used for the paper's runs.
+The analysis was run using Python 3.9. To reproduce the environment used in this study, follow these instructions:
 
 conda:
 ```bash
