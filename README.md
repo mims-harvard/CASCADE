@@ -68,26 +68,19 @@ and is meant to be run, not imported.
 
 ## Installation
 
-Python 3.9, pinned to the exact versions used for the paper's runs:
+Python 3.9, pinned to the exact versions used for the paper's runs.
 
+conda:
 ```bash
 conda env create -f environment.yml && conda activate cascade
-# or, without conda:
+```
+
+pip:
+```bash
 pip install torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118 \
     --extra-index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 ```
-
-This covers the core package (`cascade/`), preprocessing, and all Python analysis scripts.
-Seattle-AD's out-of-core preprocessing step ([`qc_scarf_seattle.py`](preprocessing/qc_scarf_seattle.py))
-additionally needs the `scarf` single-cell package, `zarr`, and `dask` in a separate
-environment — it wasn't run in the environment above, so exact pinned versions for those aren't
-available yet.
-
-The R side (`analysis/thyroid_hormone/`) depends on: `here`, `dplyr`, `tidyr`, `readr`,
-`tibble`, `stringr`, `data.table`, `janitor`, `pROC`, `openxlsx`, `readxl`, `Seurat`,
-`AnnotationDbi`, `org.Mm.eg.db`, `biomaRt`. An `renv.lock` with exact versions isn't generated
-yet.
 
 ## Data & pretrained models
 
