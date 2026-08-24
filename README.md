@@ -179,7 +179,7 @@ For the exact analyses and figures reported in the paper, see
 @article{giunchiglia2026cascade,
   title   = {CASCADE: context-aware single-cell modelling links cellular programmes to patient-level disease phenotypes},
   author  = {Giunchiglia, Valentina and Queen, Owen and Lin, Xiang and Matuszek, Zaneta
-             and Hochbaum, Daniel and Venkat, Aarthi and Abbadessa, Gianmarco
+             and Hochbaum, Daniel and Venkat, Aarthi and Li, Michelle and Abbadessa, Gianmarco
              and Rickord, Walker and Nicholas, Richard and Arlotta, Paola and Zitnik, Marinka},
   journal = {bioRxiv},
   year    = {2026},
