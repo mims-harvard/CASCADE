@@ -1,0 +1,31 @@
+name: cascade
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - --extra-index-url https://download.pytorch.org/whl/cu118
+    - torch==2.3.0+cu118
+    - torchvision==0.18.0+cu118
+    - torchaudio==2.3.0+cu118
+    - anndata==0.10.8
+    - scanpy==1.10.1
+    - scikit-misc==0.3.1     # required by scanpy's flavor='seurat_v3' highly-variable-gene selection
+    - igraph==0.11.5         # required by scanpy's sc.tl.leiden
+    - leidenalg==0.10.2      # required by scanpy's sc.tl.leiden
+    - scikit-learn==1.6.1
+    - scipy==1.13.0
+    - statsmodels==0.14.2
+    - pandas==2.2.3
+    - numpy==1.26.0
+    - pyarrow==17.0.0
+    - datasets==3.0.0        # HuggingFace, for the tokenized-dataset format (cascade/data/tokenizer.py)
+    - huggingface-hub==0.25.1  # optional: downloading pretrained checkpoints (see README "Inference")
+    - matplotlib==3.8.4
+    - seaborn==0.13.2
+    - psutil==5.9.8
+    - tqdm==4.66.5
+    - wandb==0.16.6          # optional, training/eval logging (--use_wandb)
+    - openai==1.60.2         # optional, only for analysis/alzheimers/elo_score.py (LLM-arena judging)

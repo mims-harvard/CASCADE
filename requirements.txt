@@ -1,0 +1,23 @@
+# Python 3.9. Install torch/torchvision/torchaudio first with the CUDA 11.8 index:
+#   pip install torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118 \
+#       --extra-index-url https://download.pytorch.org/whl/cu118
+#   pip install -r requirements.txt
+anndata==0.10.8
+scanpy==1.10.1
+scikit-misc==0.3.1
+igraph==0.11.5
+leidenalg==0.10.2
+scikit-learn==1.6.1
+scipy==1.13.0
+statsmodels==0.14.2
+pandas==2.2.3
+numpy==1.26.0
+pyarrow==17.0.0
+datasets==3.0.0
+huggingface-hub==0.25.1
+matplotlib==3.8.4
+seaborn==0.13.2
+psutil==5.9.8
+tqdm==4.66.5
+wandb==0.16.6
+openai==1.60.2
