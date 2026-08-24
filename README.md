@@ -105,14 +105,14 @@ dataset it was pretrained on. The table below links both.
 Three steps, in order — each dataset needs to go through all three before a model can be
 trained on it.
 
-1. **Process the raw data** (Methods 9.2-9.3): QC/normalisation, gene annotation, clustering,
+1. **Process the raw data**: QC/normalisation, gene annotation, clustering,
    clinical/donor-level metadata. Run the full per-dataset pipeline documented in
    [`analysis/README.md` → Preprocessing](analysis/README.md#preprocessing-methods-92-94)
    (steps 1-6 there).
-2. **Tokenise** (Methods 9.4): build the per-context median expression reference, then the
+2. **Tokenise**: build the per-context median expression reference, then the
    tokenizer/metadata dictionaries and the tokenized dataset itself — steps 8-9 of the same
    preprocessing table (`context_median_reference.py`, `build_tokenizer_metadata.py`).
-3. **Pretrain**: with the context-specific contrastive objective (Methods 9.10-9.11), via
+3. **Pretrain**: with the context-specific contrastive objective, via
    [`cascade/training/train_ddp.py`](cascade/training/train_ddp.py), which wraps the shared
    training loop in [`cascade/training/trainer.py`](cascade/training/trainer.py). It's a DDP
    entrypoint, so it's always launched with `torchrun` — `--nproc_per_node=1` on a single GPU,
@@ -164,7 +164,7 @@ Three steps, in order:
    files needed to tokenize new data for that model — each HF model page's "Usage
    Instructions" section shows how to load them directly into `TransformerGenerator`
    (`cascade/model/cascade_model.py`).
-2. **Extract embeddings**: downstream analyses consume *frozen* CASCADE embeddings rather than
+2. **Extract embeddings**: downstream analyses use *frozen* CASCADE embeddings rather than
    running the model live. The paper's own large-scale extraction used
    [`cascade/explainer/get_embeddings_parallel.py`](cascade/explainer/get_embeddings_parallel.py),
    a `torchrun` entrypoint that reads a *raw* training checkpoint (`.pt`, with
